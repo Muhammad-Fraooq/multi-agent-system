@@ -8,9 +8,6 @@ from typing import cast
 
 load_dotenv()
 
-port = int(os.environ.get("PORT", 8000))
-cl.run(port=port)
-
 # Load Gemini API key
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 base_url = os.getenv("BASE_URL")
