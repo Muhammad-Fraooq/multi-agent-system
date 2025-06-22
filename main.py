@@ -10,6 +10,8 @@ load_dotenv()
 
 # Load Gemini API key
 gemini_api_key = os.getenv("GEMINI_API_KEY")
+base_url = os.getenv("BASE_URL")
+
 if not gemini_api_key:
     raise ValueError("GEMINI_API_KEY environment variable not set")
 
@@ -23,7 +25,7 @@ async def start():
             self.model_name = model_name
             self.client = AsyncOpenAI(
                 api_key=api_key,
-                base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+                base_url=base_url
             )
 
         def get_model(self):
