@@ -41,7 +41,7 @@ A powerful and modular Multi-Agent System built with **OpenAI Agents SDK** and *
 We welcome contributions! Fork the repo, submit a pull request, or open an issue to suggest improvements or report bugs.
 
 ## 📄 License
-MIT License
+MIT License. See [LICENSE](LICENSE).
 
 ---
 
