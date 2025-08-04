@@ -6,8 +6,9 @@ from typing import cast
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from agents.run import RunConfig
-from agents import Agent, Runner, function_tool, OpenAIChatCompletionsModel, ModelProvider
-from prompts.prompts import programming_prompt,general_prompt,triage_prompt
+from agents import Agent, Runner, function_tool, OpenAIChatCompletionsModel,ModelSettings,SQLiteSession
+from prompts.prompts import triage_prompt,enhanced_general_prompt,enhanced_programming_prompt
+from openai.types.responses import ResponseTextDeltaEvent
 
 load_dotenv()
 
@@ -18,30 +19,24 @@ base_url = os.getenv("BASE_URL")
 if not gemini_api_key:
     raise ValueError("GEMINI_API_KEY environment variable not set")
 
- # Gemini model provider
-class GeminiModelProvider(ModelProvider):
-    def __init__(self, api_key, model_name="gemini-2.0-flash"):
-        super().__init__()
-        self.api_key = api_key
-        self.model_name = model_name
-        self.client = AsyncOpenAI(
-            api_key=api_key,
-            base_url=base_url
-            )
-
-    def get_model(self,model_name="gemini-2.0-flash"):
-        return OpenAIChatCompletionsModel(
-            model=self.model_name,
-            openai_client=self.client
-            )
-
-model_provider = GeminiModelProvider(api_key=gemini_api_key)
-
-    # Model config
-config = RunConfig(model=model_provider.get_model(),model_provider=model_provider,tracing_disabled=True)
-
 @cl.on_chat_start
 async def start():
+    
+    external_client = AsyncOpenAI(
+    api_key=gemini_api_key,
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    )
+
+    model = OpenAIChatCompletionsModel(
+        model="gemini-2.0-flash",
+        openai_client=external_client,
+        )
+
+    config = RunConfig(
+        model=model,
+        model_provider=external_client, # type: ignore
+        tracing_disabled=True
+        )
 
     @function_tool
     async def get_weather(city: str) -> str:
@@ -63,29 +58,36 @@ async def start():
     # Programming Agent
     programming_agent = Agent(
         name="Programming Agent",
+        instructions=enhanced_programming_prompt,
+        model_settings=ModelSettings(
+            temperature=0.3,
+            top_p=1.0,
+            max_tokens=1000,
+        ),
         handoff_description="Handles programming questions.",
-        instructions=programming_prompt,
-        model=model_provider.get_model(),
+        model=model,
     )
 
     # General Agent
     general_agent = Agent(
         name="General Agent",
+        instructions=enhanced_general_prompt,
+        model=model,
+        model_settings=ModelSettings(
+            temperature=0.85,
+            top_p=0.95,
+            max_tokens=500,
+        ),
         handoff_description="Handles general questions or those handed off from other agents.",
-        instructions=general_prompt,
-        model=model_provider.get_model(),
         tools=[get_weather],
     )
 
     traige_agent = Agent(
         name="Triage Agent",
         instructions=triage_prompt,
-        model=model_provider.get_model(),
+        model=model,
         handoffs=[programming_agent, general_agent],
     )
-
-    programming_agent.handoffs.append(traige_agent)
-    general_agent.handoffs.append(traige_agent)
 
     """ Setup the chat session when a user connects.  """
     cl.user_session.set("chat_history",[])
@@ -110,34 +112,29 @@ Created by Muhammad Farooq — powered by expert multi-agents.
 @cl.on_message
 async def main(message: cl.Message):
     """ Process incoming massages and generate response. """
-    
+    user_input = message.content
+
     triage_agent = cast(Agent,cl.user_session.get("traige_agent"))
     runner = cast(Runner,cl.user_session.get("runner"))
     config = cast(RunConfig,cl.user_session.get("config"))
-    chat_history = cl.user_session.get("chat_history") or []
-
-    chat_history.append({"role": "user", "content": message.content})
-
+    
     msg = cl.Message(content="Thinking...")
     await msg.send()
 
+    session = SQLiteSession("multiple123","multi_conversation.db")
+
     try:
         # Run the triage agent to determine which agent to use
-        result = runner.run_streamed(triage_agent, input=chat_history, run_config=config)
+        result = runner.run_streamed(triage_agent,user_input, run_config=config,session=session)
 
-        full_response:str = ""
+        full_response = ""
 
         async for event in result.stream_events():
-            if event.type == "raw_response_event" and hasattr(event.data,"delta"):
-                token = cast(str, event.data.delta)
-                if token:
-                    full_response += token
-                    msg.content = full_response
-                    await msg.update()
-                    await asyncio.sleep(0.10)  # Add a small delay to simulate typing
-
-        chat_history.append({"role":"assistant","content": full_response})
-        cl.user_session.set("chat_history",chat_history)
+            if event.type == "raw_response_event" and isinstance(event.data,ResponseTextDeltaEvent):
+                token =  event.data.delta # type: ignore
+                full_response += token
+                msg.content = full_response
+                await msg.update()
 
     except Exception as e:
             msg.content = f"Error: {e}"
