@@ -1,0 +1,5 @@
+chainlit
+python-dotenv
+openai-agents
+eval_type_backport
+websockets

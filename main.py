@@ -1,30 +1,32 @@
 import os
 import requests
 import chainlit as cl
-import asyncio
-from typing import cast
+from typing import cast,Dict
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from agents.run import RunConfig
-from agents import Agent, Runner, function_tool, OpenAIChatCompletionsModel,ModelSettings,SQLiteSession
+from agents import Agent, Runner, function_tool, OpenAIChatCompletionsModel,ModelSettings
 from prompts.prompts import triage_prompt,enhanced_general_prompt,enhanced_programming_prompt
 from openai.types.responses import ResponseTextDeltaEvent
+from data.data import load_history,save_history
 
 load_dotenv()
 
 # Load Gemini API key
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 base_url = os.getenv("BASE_URL")
-
 if not gemini_api_key:
     raise ValueError("GEMINI_API_KEY environment variable not set")
 
+# Store conversation history
+conversation_history: Dict[str, list] = load_history()
+
 @cl.on_chat_start
 async def start():
-    
+
     external_client = AsyncOpenAI(
-    api_key=gemini_api_key,
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        api_key=gemini_api_key,
+        base_url=base_url,
     )
 
     model = OpenAIChatCompletionsModel(
@@ -90,7 +92,10 @@ async def start():
     )
 
     """ Setup the chat session when a user connects.  """
-    cl.user_session.set("chat_history",[])
+    session_id = cl.user_session.get("id")
+    if session_id:
+        if session_id not in conversation_history:
+            conversation_history[session_id] = []
     cl.user_session.set("config",config)
     cl.user_session.set("traige_agent",traige_agent)
     
@@ -121,11 +126,20 @@ async def main(message: cl.Message):
     msg = cl.Message(content="Thinking...")
     await msg.send()
 
-    session = SQLiteSession("multiple123","multi_conversation.db")
+     # Get session ID
+    session_id = cl.user_session.get("id")
+    
+      # Update conversation history
+    if session_id is not None:
+        conversation_history[session_id].append({
+            "role": "user",
+            "content": user_input
+        })
+        save_history(conversation_history)
 
     try:
         # Run the triage agent to determine which agent to use
-        result = runner.run_streamed(triage_agent,user_input, run_config=config,session=session)
+        result = runner.run_streamed(triage_agent,user_input, run_config=config)
 
         full_response = ""
 
@@ -136,12 +150,17 @@ async def main(message: cl.Message):
                 msg.content = full_response
                 await msg.update()
 
+       # Update conversation history with assistant's response
+        if session_id is not None:
+            conversation_history[session_id].append({
+            "role": "assistant",
+            "content": msg.content
+        })
+        save_history(conversation_history)
+
     except Exception as e:
             msg.content = f"Error: {e}"
             await msg.update()
-            
-
-
 
 
 
