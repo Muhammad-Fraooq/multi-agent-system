@@ -88,6 +88,6 @@ MIT License. See [LICENSE](LICENSE).
 
 ---
 
-Built with ❤️ by \[Muhammad Farooq](https://www.linkedin.com/in/muhammad-farooq-developer/)
-🔗 Deployed on Hugging Face: [Muhammad Farooq](https://huggingface.co/muhammaddev2007)
+- Built with ❤️ by [Muhammad Farooq](https://www.linkedin.com/in/muhammad-farooq-developer/)
+- 🔗 Deployed on Hugging Face: [Muhammad Farooq](https://huggingface.co/muhammaddev2007)
 
