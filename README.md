@@ -34,7 +34,7 @@ A powerful and modular Multi-Agent System built with **OpenAI Agents SDK** and *
    ```bash
    git clone https://github.com/Muhammad-Fraooq/multi-agent-system.git
    cd multi-agent-system
-````
+```
 
 ## 2. **Install dependencies**:
    ```bash
