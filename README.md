@@ -36,17 +36,17 @@ A powerful and modular Multi-Agent System built with **OpenAI Agents SDK** and *
    cd multi-agent-system
 ````
 
-2. **Install dependencies**:
+## 2. **Install dependencies**:
    ```bash
    uv install
    ```
 
-3. **Set up `.env`**:
+## 3. **Set up `.env`**:
    ```
    GEMINI_API_KEY=your_gemini_api_key
    ```
 
-4. **Launch the app**:
+## 4. **Launch the app**:
    ```bash
    chainlit run main.py
    ```
@@ -89,5 +89,5 @@ MIT License. See [LICENSE](LICENSE).
 ---
 
 Built with ❤️ by \[Muhammad Farooq](https://www.linkedin.com/in/muhammad-farooq-developer/)
-🔗 Deployed on Hugging Face: [Multi-Agent](https://huggingface.co/spaces/muhammaddev2007/multi-agent)
+🔗 Deployed on Hugging Face: [Muhammad Farooq](https://huggingface.co/muhammaddev2007)
 
