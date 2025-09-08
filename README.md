@@ -31,22 +31,23 @@ A powerful and modular Multi-Agent System built with **OpenAI Agents SDK** and *
 ## 🚀 Quick Start
 
 1. **Clone the repo**:
-   ```bash
+   ```
    git clone https://github.com/Muhammad-Fraooq/multi-agent-system.git
    cd multi-agent-system
-
+   ```
+   
 2. **Install dependencies**:
-   ```bash
+   ```
    uv install
    ```
 
 3. **Set up `.env`**:
    ```
    GEMINI_API_KEY=your_gemini_api_key
-   ```
+    ```
 
-4. **Launch the app**:
-   ```bash
+5. **Launch the app**:
+   ```
    chainlit run main.py -w
    ```
 ---
